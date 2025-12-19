@@ -11,7 +11,7 @@
   "dependencies": {
     "@react-three/drei": "9.88.6",
     "@react-three/fiber": "8.15.12",
-    "three": "0.165.0",
+    "three": "0.152.2",
 
     "framer-motion": "^12.0.6",
     "next": "^15.5.9",
@@ -20,7 +20,7 @@
     "react-error-boundary": "^5.0.0"
   },
   "devDependencies": {
-    "@types/three": "^0.165.0",
+    "@types/node": "^20.11.30",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "typescript": "^5"
