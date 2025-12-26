@@ -97,8 +97,6 @@ function DisabledPlaceholder() {
 
 export default function PlayPage() {
   const [mounted, setMounted] = useState(false);
-  const [Spline, setSpline] = useState<SplineComponentType | null>(null);
-  const [splineLoadFailed, setSplineLoadFailed] = useState(false);
 
   const splineOff = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -109,30 +107,6 @@ export default function PlayPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const shouldLoadSpline = ENABLED && mounted && !splineOff && !splineLoadFailed;
-
-  useEffect(() => {
-    if (!shouldLoadSpline) return;
-
-    let cancelled = false;
-
-    loadSplineComponent()
-      .then((Comp) => {
-        if (cancelled) return;
-        setSpline(() => Comp);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSplineLoadFailed(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldLoadSpline]);
-
-  if (!ENABLED) return <DisabledPlaceholder />;
 
   if (!mounted) {
     return (
@@ -157,21 +131,26 @@ export default function PlayPage() {
 
       <div className="mx-auto max-w-6xl px-6 pb-10">
         <div className="rounded-2xl overflow-hidden border border-white/10 bg-black">
-          <LocalErrorBoundary onError={() => setSplineLoadFailed(true)}>
-            <div className="min-h-[70vh] flex items-center justify-center">
-              {Spline ? (
-                <div className="w-full min-h-[70vh]">
-                  <Spline scene="https://my.spline.design/gamewhacathief-4PclVm0IgTe8FimIEsPn8Gvw/" />
-                </div>
-              ) : (
-                <div className="text-white/70">Loading interactive scene…</div>
-              )}
-            </div>
-          </LocalErrorBoundary>
+          <div className="relative w-full" style={{ height: "70vh", minHeight: "600px" }}>
+            <iframe
+              src="https://my.spline.design/gamewhacathief-4PclVm0IgTe8FimIEsPn8Gvw/"
+              frameBorder="0"
+              width="100%"
+              height="100%"
+              style={{
+                background: "transparent",
+                border: "none",
+                display: "block"
+              }}
+              allow="autoplay; fullscreen; xr-spatial-tracking"
+              sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+              title="Interactive Spline Scene - Playground"
+            />
+          </div>
         </div>
 
         <p className="mt-4 text-white/50 text-sm">
-          Note: If preview fails under Turbopack, production may still be fine. Use Safe mode if needed.
+          Interactive 3D scene - click and drag to explore
         </p>
       </div>
     </div>
