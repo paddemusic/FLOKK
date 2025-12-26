@@ -120,7 +120,7 @@ export default function PlayPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="px-6 py-4 flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between max-w-screen-2xl mx-auto">
         <Link className="text-white/80 hover:text-white" href="/">
           ← Back to site
         </Link>
@@ -129,9 +129,9 @@ export default function PlayPage() {
         </Link>
       </div>
 
-      <div className="mx-auto max-w-6xl px-6 pb-10">
+      <div className="mx-auto max-w-screen-2xl px-4 pb-10">
         <div className="rounded-2xl overflow-hidden border border-white/10 bg-black">
-          <div className="relative w-full" style={{ height: "70vh", minHeight: "600px" }}>
+          <div className="relative w-full" style={{ height: "80vh", minHeight: "700px" }}>
             <iframe
               src="https://my.spline.design/gamewhacathief-4PclVm0IgTe8FimIEsPn8Gvw/"
               frameBorder="0"
@@ -149,7 +149,7 @@ export default function PlayPage() {
           </div>
         </div>
 
-        <p className="mt-4 text-white/50 text-sm">
+        <p className="mt-4 text-white/50 text-sm text-center">
           Interactive 3D scene - click and drag to explore
         </p>
       </div>
