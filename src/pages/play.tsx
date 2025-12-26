@@ -1,0 +1,179 @@
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import React from "react";
+
+const ENABLED =
+  typeof process !== "undefined" &&
+  process.env.NEXT_PUBLIC_ENABLE_SPLINE_PLAYGROUND === "true";
+
+interface LocalErrorBoundaryProps {
+  children: React.ReactNode;
+  onError?: () => void;
+}
+
+interface LocalErrorBoundaryState {
+  hasError: boolean;
+}
+
+class LocalErrorBoundary extends React.Component<
+  LocalErrorBoundaryProps,
+  LocalErrorBoundaryState
+> {
+  constructor(props: LocalErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    if (typeof this.props.onError === "function") this.props.onError();
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-6">
+        <h1 className="text-xl font-semibold text-white">Playground couldn’t load</h1>
+        <p className="text-white/70 max-w-md">
+          The interactive scene failed to load in this preview. Try refresh — or open in another browser/device. Desktop
+          works best.
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            className="px-4 py-2 rounded-full border border-white/20 text-white hover:border-white/40"
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </button>
+          <Link className="px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/15" href="/">
+            Back to site
+          </Link>
+        </div>
+      </div>
+    );
+  }
+}
+
+type SplineComponentType = (props: { scene: string }) => JSX.Element;
+
+async function loadSplineComponent(): Promise<SplineComponentType> {
+  const importer = new Function('return import("@splinetool/react-spline/next")') as () => Promise<{
+    default: SplineComponentType;
+  }>;
+  const mod = await importer();
+  return mod.default;
+}
+
+function DisabledPlaceholder() {
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center px-6 text-center">
+      <div className="max-w-md">
+        <h1 className="text-white text-xl font-semibold">Spline playground temporarily disabled</h1>
+        <p className="text-white/70 mt-2">
+          This route is behind a safety switch. Enable it via{" "}
+          <span className="text-white/90">NEXT_PUBLIC_ENABLE_SPLINE_PLAYGROUND=true</span>.
+        </p>
+        <div className="mt-5 flex gap-3 justify-center">
+          <button
+            type="button"
+            className="inline-flex px-4 py-2 rounded-full border border-white/20 text-white hover:border-white/40"
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </button>
+          <Link className="inline-flex px-4 py-2 rounded-full bg-white/10 text-white hover:bg-white/15" href="/">
+            Back to site
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PlayPage() {
+  const [mounted, setMounted] = useState(false);
+  const [Spline, setSpline] = useState<SplineComponentType | null>(null);
+  const [splineLoadFailed, setSplineLoadFailed] = useState(false);
+
+  const splineOff = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const sp = new URLSearchParams(window.location.search);
+    return sp.get("spline") === "off";
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const shouldLoadSpline = ENABLED && mounted && !splineOff && !splineLoadFailed;
+
+  useEffect(() => {
+    if (!shouldLoadSpline) return;
+
+    let cancelled = false;
+
+    loadSplineComponent()
+      .then((Comp) => {
+        if (cancelled) return;
+        setSpline(() => Comp);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSplineLoadFailed(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldLoadSpline]);
+
+  if (!ENABLED) return <DisabledPlaceholder />;
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center px-6 text-center">
+        <div className="text-white/70 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (splineOff) return <DisabledPlaceholder />;
+
+  return (
+    <div className="min-h-screen bg-black">
+      <div className="px-6 py-4 flex items-center justify-between">
+        <Link className="text-white/80 hover:text-white" href="/">
+          ← Back to site
+        </Link>
+        <Link className="text-white/60 hover:text-white/80 text-sm" href="/play?spline=off">
+          Safe mode
+        </Link>
+      </div>
+
+      <div className="mx-auto max-w-6xl px-6 pb-10">
+        <div className="rounded-2xl overflow-hidden border border-white/10 bg-black">
+          <LocalErrorBoundary onError={() => setSplineLoadFailed(true)}>
+            <div className="min-h-[70vh] flex items-center justify-center">
+              {Spline ? (
+                <div className="w-full min-h-[70vh]">
+                  <Spline scene="https://my.spline.design/gamewhacathief-4PclVm0IgTe8FimIEsPn8Gvw/" />
+                </div>
+              ) : (
+                <div className="text-white/70">Loading interactive scene…</div>
+              )}
+            </div>
+          </LocalErrorBoundary>
+        </div>
+
+        <p className="mt-4 text-white/50 text-sm">
+          Note: If preview fails under Turbopack, production may still be fine. Use Safe mode if needed.
+        </p>
+      </div>
+    </div>
+  );
+}
