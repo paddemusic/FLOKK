@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { fadeUpStagger } from "@/lib/motion";
+import { useMemo } from "react";
+import React from "react";
 
 export interface CareerSnapshotProps {
   role?: string | null;
@@ -11,27 +13,30 @@ const cvHighlightsNo: string[] = [
   "Freelance campaigns & storytelling",
 ];
 
-export function CareerSnapshot({ role = null }: CareerSnapshotProps) {
-  const lens =
-    role === "recruiter"
-      ? {
-          title: "Career snapshot — the signal up front",
-          intro: "A recruiter-first overview: role fit, working style, and the outcomes I’m hired to drive.",
-        }
-      : role === "partner"
-      ? {
-          title: "Career snapshot — how we’d work together",
-          intro: "A fast read on my background, collaboration style, and where I add leverage over time.",
-        }
-      : role === "admin"
-      ? {
-          title: "Career snapshot — clarity and delivery",
-          intro: "A structured overview with an emphasis on reliability, cadence, and clean handoffs.",
-        }
-      : {
-          title: "Career snapshot — craft with intent",
-          intro: "A condensed view of where I’ve been, and the strengths I bring to a team.",
-        };
+export const CareerSnapshot = React.memo(function CareerSnapshot({ role = null }: CareerSnapshotProps) {
+  const lens = useMemo(
+    () =>
+      role === "recruiter"
+        ? {
+            title: "Career snapshot — the signal up front",
+            intro: "A recruiter-first overview: role fit, working style, and the outcomes I'm hired to drive.",
+          }
+        : role === "partner"
+        ? {
+            title: "Career snapshot — how we'd work together",
+            intro: "A fast read on my background, collaboration style, and where I add leverage over time.",
+          }
+        : role === "admin"
+        ? {
+            title: "Career snapshot — clarity and delivery",
+            intro: "A structured overview with an emphasis on reliability, cadence, and clean handoffs.",
+          }
+        : {
+            title: "Career snapshot — craft with intent",
+            intro: "A condensed view of where I've been, and the strengths I bring to a team.",
+          },
+    [role]
+  );
 
   return (
     <section id="career" className="relative overflow-hidden section-y overlap-fade">
@@ -113,4 +118,4 @@ export function CareerSnapshot({ role = null }: CareerSnapshotProps) {
       </div>
     </section>
   );
-}
+});

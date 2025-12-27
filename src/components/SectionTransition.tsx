@@ -1,5 +1,6 @@
 import { motion, useInView } from "framer-motion";
-import { ReactNode, useRef } from "react";
+import { ReactNode, useRef, useMemo } from "react";
+import React from "react";
 
 interface SectionTransitionProps {
   children: ReactNode;
@@ -8,7 +9,7 @@ interface SectionTransitionProps {
   pulseHeading?: boolean;
 }
 
-export default function SectionTransition({ 
+const SectionTransition = React.memo(function SectionTransition({ 
   children, 
   variant = "fade",
   className = "",
@@ -17,7 +18,7 @@ export default function SectionTransition({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const variants = {
+  const variants = useMemo(() => ({
     fade: {
       initial: { opacity: 0 },
       whileInView: { opacity: 1 },
@@ -36,7 +37,7 @@ export default function SectionTransition({
       viewport: { once: true, margin: "-100px" },
       transition: { duration: 1, ease: [0.22, 1, 0.36, 1] }
     }
-  };
+  }), []);
 
   const config = variants[variant];
 
@@ -68,4 +69,6 @@ export default function SectionTransition({
       {children}
     </motion.div>
   );
-}
+});
+
+export default SectionTransition;
