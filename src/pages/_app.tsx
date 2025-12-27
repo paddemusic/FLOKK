@@ -2,8 +2,6 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { ThemeProvider } from "@/contexts/ThemeProvider";
 import Layout from "@/components/Layout";
-import { useScrollPolish } from "@/lib/scrollPolish";
-import { useMotionSync } from "@/hooks/useMotionSync";
 import { ReactiveOverlay } from "@/components/ReactiveOverlay";
 import { MicroPolish } from "@/components/MicroPolish";
 import { CinematicMotion } from "@/components/CinematicMotion";
@@ -17,8 +15,7 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { LazyMotion, domAnimation } from "framer-motion";
 
 export default function App({ Component, pageProps }: AppProps) {
-  useScrollPolish();
-  useMotionSync();
+  // Removed global scroll hooks - moved to specific pages that need them
   return (
     <GlobalErrorBoundary>
       <LazyMotion features={domAnimation} strict>

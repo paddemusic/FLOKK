@@ -2,13 +2,15 @@ import { motion } from "framer-motion";
 import { portfolioCardHover } from "@/lib/motion";
 import { Project } from "@/data/projects";
 import { ExternalLink, Eye } from "lucide-react";
+import React from "react";
+import Image from "next/image";
 
 interface PortfolioCardProps {
   project: Project;
   index: number;
 }
 
-export default function PortfolioCard({ project, index }: PortfolioCardProps) {
+const PortfolioCard = React.memo(function PortfolioCard({ project, index }: PortfolioCardProps) {
   const isSnapchatSerie = project.id === "snapchat-tv2-2021";
 
   return (
@@ -28,19 +30,26 @@ export default function PortfolioCard({ project, index }: PortfolioCardProps) {
       className="group relative block rounded-lg bg-brand-white/5 border border-brand-white/10 hover:border-brand-red/50 transition-all duration-300"
     >
       {/* Wrapper without forced aspect/overflow so image can fully contain */}
-      <div className="relative w-full">
-        <motion.img
+      <div className="relative w-full aspect-video">
+        <Image
           src={project.thumbnail}
           alt={project.title}
-          className="fade-in-smooth"
+          fill
+          className="fade-in-smooth object-cover rounded-t-lg"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          quality={85}
+          loading="lazy"
         />
 
         {isSnapchatSerie && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <img
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <Image
               src="/BROSLO_LOGO_BLACK.png"
               alt="BROSLO Logo"
+              width={200}
+              height={100}
               className="w-1/3 h-auto opacity-90 mix-blend-screen"
+              loading="lazy"
             />
           </div>
         )}
@@ -86,4 +95,6 @@ export default function PortfolioCard({ project, index }: PortfolioCardProps) {
       </div>
     </motion.a>
   );
-}
+});
+
+export default PortfolioCard;

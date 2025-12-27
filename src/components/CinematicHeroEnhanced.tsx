@@ -37,7 +37,8 @@ export default function CinematicHeroEnhanced() {
       const x = Math.sin(seed + i * 9973) * 10000;
       return x - Math.floor(x);
     };
-    const next = Array.from({ length: 8 }).map((_, i) => ({
+    // Reduced from 8 to 4 particles for better performance
+    const next = Array.from({ length: 4 }).map((_, i) => ({
       x: rng(i * 3) * 100,
       y: rng(i * 3 + 1) * 100,
       ax: rng(i * 3 + 2) * 100,
@@ -48,17 +49,31 @@ export default function CinematicHeroEnhanced() {
   }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    if (prefersReduced) return;
+
+    let rafId: number | null = null;
+    let isRunning = false;
+
+    const updateMousePosition = (e: MouseEvent) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth - 0.5) * 20,
         y: (e.clientY / window.innerHeight - 0.5) * 20,
       });
+      isRunning = false;
     };
-    
-    if (!prefersReduced) {
-      window.addEventListener("mousemove", handleMouseMove);
-      return () => window.removeEventListener("mousemove", handleMouseMove);
-    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isRunning) return;
+
+      isRunning = true;
+      rafId = requestAnimationFrame(() => updateMousePosition(e));
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [prefersReduced]);
 
   const scrollToPortfolio = () => {

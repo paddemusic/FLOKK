@@ -59,12 +59,26 @@ function Model({
   useEffect(() => {
     if (!scrollAnimation) return;
 
-    const handleScroll = () => {
+    let rafId: number | null = null;
+    let isRunning = false;
+
+    const updateScrollY = () => {
       setScrollY(window.scrollY);
+      isRunning = false;
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      if (isRunning) return;
+
+      isRunning = true;
+      rafId = requestAnimationFrame(updateScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [scrollAnimation]);
 
   useFrame((state) => {

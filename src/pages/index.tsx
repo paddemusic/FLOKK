@@ -1,6 +1,6 @@
 import Head from "next/head";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 import CinematicHeroEnhanced from "@/components/CinematicHeroEnhanced";
@@ -10,19 +10,57 @@ import BTSAltStrip from "@/components/BTSAltStrip";
 import SoMeMindsetSection from "@/components/SoMeMindsetSection";
 import EpilogSection from "@/components/EpilogSection";
 import ConnectionOutro from "@/sections/ConnectionOutro";
-import { ScrollCameraSection } from "@/components/ScrollCameraSection";
-import { MusicalPulseLayer } from "@/components/MusicalPulseLayer";
-import { SplineChecklist } from "@/components/SplineChecklist";
-import { SplineVisionProLab } from "@/components/SplineVisionProLab";
-import { SplineCameraSwitchLab } from "@/components/SplineCameraSwitchLab";
 import ContactSection from "@/components/ContactSection";
 import OmMegSection from "@/components/OmMegSection";
 import { RoleLanding, RoleKey } from "@/components/RoleLanding";
 import { EntryTransitionOverlay } from "@/components/EntryTransitionOverlay";
 import { CareerSnapshot } from "@/components/CareerSnapshot";
-import { ResumeDocumentLayerNO } from "@/components/ResumeDocumentLayerNO";
-import { CareerTimelineSection } from "@/components/CareerTimelineSection";
 import Link from "next/link";
+import { useScrollPolish } from "@/lib/scrollPolish";
+import { useMotionSync } from "@/hooks/useMotionSync";
+
+// Loading fallback for heavy components
+const HeavyComponentLoader = () => (
+  <div className="w-full h-96 flex items-center justify-center">
+    <div className="animate-pulse text-white/50">Loading...</div>
+  </div>
+);
+
+// Code-split heavy 3D and animation components
+const ScrollCameraSection = dynamic(
+  () => import("@/components/ScrollCameraSection").then((mod) => ({ default: mod.ScrollCameraSection })),
+  { ssr: false, loading: HeavyComponentLoader }
+);
+
+const MusicalPulseLayer = dynamic(
+  () => import("@/components/MusicalPulseLayer").then((mod) => ({ default: mod.MusicalPulseLayer })),
+  { ssr: false }
+);
+
+const SplineChecklist = dynamic(
+  () => import("@/components/SplineChecklist").then((mod) => ({ default: mod.SplineChecklist })),
+  { ssr: false, loading: HeavyComponentLoader }
+);
+
+const SplineVisionProLab = dynamic(
+  () => import("@/components/SplineVisionProLab").then((mod) => ({ default: mod.SplineVisionProLab })),
+  { ssr: false, loading: HeavyComponentLoader }
+);
+
+const SplineCameraSwitchLab = dynamic(
+  () => import("@/components/SplineCameraSwitchLab").then((mod) => ({ default: mod.SplineCameraSwitchLab })),
+  { ssr: false, loading: HeavyComponentLoader }
+);
+
+const ResumeDocumentLayerNO = dynamic(
+  () => import("@/components/ResumeDocumentLayerNO").then((mod) => ({ default: mod.ResumeDocumentLayerNO })),
+  { ssr: false }
+);
+
+const CareerTimelineSection = dynamic(
+  () => import("@/components/CareerTimelineSection").then((mod) => ({ default: mod.CareerTimelineSection })),
+  { ssr: true, loading: HeavyComponentLoader }
+);
 
 /**
  * ⚠️ CRITICAL: SPOTIFY IS A STRICT NO-TOUCH ZONE ⚠️
@@ -51,18 +89,15 @@ function normalizeRole(value: unknown): RoleKey | null {
 }
 
 export default function Home() {
+  // Initialize scroll effects only on home page
+  useScrollPolish();
+  useMotionSync();
+
   const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const teaserRef = useRef<HTMLDivElement | null>(null);
   const teaserInView = useInView(teaserRef, { once: true, margin: "-15% 0px -15% 0px" });
-
-  useEffect(() => {
-    const handleSmoothScroll = () => {
-      document.documentElement.style.scrollBehavior = "smooth";
-    };
-    handleSmoothScroll();
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -71,7 +106,7 @@ export default function Home() {
     if (role) setSelectedRole(role);
   }, []);
 
-  const roleLabel = useMemo(() => selectedRole ?? null, [selectedRole]);
+  const roleLabel = selectedRole ?? null;
 
   const handleSelectRole = (role: RoleKey) => {
     setSelectedRole(role);

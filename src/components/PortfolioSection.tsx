@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
 import { fadeUpStagger, scaleOnPress } from "@/lib/motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { projects, categories, Category } from "@/data/projects";
 import PortfolioCard from "./PortfolioCard";
 
 export default function PortfolioSection() {
   const [selectedCategory, setSelectedCategory] = useState<Category>("Alle");
 
-  const filteredProjects =
-    selectedCategory === "Alle"
-      ? projects
-      : projects.filter((p) => p.category === selectedCategory);
+  const filteredProjects = useMemo(
+    () =>
+      selectedCategory === "Alle"
+        ? projects
+        : projects.filter((p) => p.category === selectedCategory),
+    [selectedCategory]
+  );
 
   return (
     <section id="projects" className="py-24 md:py-32 bg-transparent relative overflow-hidden">
