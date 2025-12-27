@@ -44,6 +44,10 @@ const CONFIG = {
   SCALE_COMPRESSED: 0.6,
   PARALLAX_BG: 0.3,
 
+  // Spotlight parameters
+  SPOTLIGHT_RADIUS: 300,
+  SPOTLIGHT_LERP: 0.12,
+
   // Total scroll height
   TOTAL_SCROLL_HEIGHT: 4000,
 }
@@ -108,6 +112,206 @@ const WORK_CARDS = [
 ]
 
 // ============================================================================
+// ROLLING TEXT COMPONENT
+// ============================================================================
+
+function RollingText({ text, className, style }: { text: string; className?: string; style?: React.CSSProperties }) {
+  return (
+    <span
+      className={className}
+      style={{
+        display: 'inline-block',
+        overflow: 'hidden',
+        position: 'relative',
+        ...style,
+      }}
+    >
+      <span
+        style={{
+          display: 'inline-flex',
+          flexDirection: 'column',
+          transition: 'transform 0.6s cubic-bezier(0.76, 0, 0.24, 1)',
+        }}
+        className="rolling-text-inner"
+      >
+        <span style={{ display: 'block' }}>{text}</span>
+        <span style={{ display: 'block', position: 'absolute', top: '100%' }}>{text}</span>
+      </span>
+      <style>{`
+        .rolling-text-inner:hover {
+          transform: translateY(-100%);
+        }
+      `}</style>
+    </span>
+  )
+}
+
+// ============================================================================
+// SPOTLIGHT SECTION COMPONENT
+// ============================================================================
+
+function SpotlightSection({
+  children,
+  isActive
+}: {
+  children: React.ReactNode
+  isActive: boolean
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mousePos = useRef({ x: 0, y: 0 })
+  const smoothMousePos = useRef({ x: 0, y: 0 })
+  const rafId = useRef<number>(0)
+
+  useEffect(() => {
+    if (!isActive) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      mousePos.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      }
+    }
+
+    const animate = () => {
+      smoothMousePos.current.x = lerp(smoothMousePos.current.x, mousePos.current.x, CONFIG.SPOTLIGHT_LERP)
+      smoothMousePos.current.y = lerp(smoothMousePos.current.y, mousePos.current.y, CONFIG.SPOTLIGHT_LERP)
+
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--spotlight-x', `${smoothMousePos.current.x}px`)
+        containerRef.current.style.setProperty('--spotlight-y', `${smoothMousePos.current.y}px`)
+      }
+
+      rafId.current = requestAnimationFrame(animate)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    rafId.current = requestAnimationFrame(animate)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      if (rafId.current) cancelAnimationFrame(rafId.current)
+    }
+  }, [isActive])
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        gap: '32px',
+        padding: '0 48px',
+        maxWidth: '1200px',
+        width: '100%',
+        justifyContent: 'center',
+        // CSS custom properties for spotlight
+        ['--spotlight-x' as string]: '50%',
+        ['--spotlight-y' as string]: '50%',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ============================================================================
+// PHILOSOPHY CARD WITH SPOTLIGHT
+// ============================================================================
+
+function PhilosophyCard({
+  title,
+  description,
+  isSpotlightActive
+}: {
+  title: string
+  description: string
+  isSpotlightActive: boolean
+}) {
+  return (
+    <div
+      style={{
+        flex: '1 1 300px',
+        maxWidth: '360px',
+        padding: '32px',
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '8px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Base text layer (dimmed) */}
+      <h3
+        style={{
+          fontSize: '18px',
+          fontWeight: 500,
+          color: isSpotlightActive ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)',
+          marginBottom: '12px',
+          letterSpacing: '-0.03em',
+          lineHeight: 1.1,
+          transition: 'color 0.4s ease',
+        }}
+      >
+        {title}
+      </h3>
+      <p
+        style={{
+          fontSize: '14px',
+          color: isSpotlightActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.5)',
+          lineHeight: 1.6,
+          letterSpacing: '-0.01em',
+          transition: 'color 0.4s ease',
+        }}
+      >
+        {description}
+      </p>
+
+      {/* Spotlight text layer (revealed by cursor) */}
+      {isSpotlightActive && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            padding: '32px',
+            background: `radial-gradient(
+              ${CONFIG.SPOTLIGHT_RADIUS}px circle at var(--spotlight-x) var(--spotlight-y),
+              rgba(255,255,255,1) 0%,
+              rgba(255,255,255,0) 100%
+            )`,
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            color: 'transparent',
+            pointerEvents: 'none',
+          }}
+        >
+          <h3
+            style={{
+              fontSize: '18px',
+              fontWeight: 500,
+              marginBottom: '12px',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.1,
+            }}
+          >
+            {title}
+          </h3>
+          <p
+            style={{
+              fontSize: '14px',
+              lineHeight: 1.6,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {description}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -118,11 +322,13 @@ export default function Page() {
   const heroRef = useRef<HTMLDivElement>(null)
   const philosophyRef = useRef<HTMLDivElement>(null)
   const workRef = useRef<HTMLDivElement>(null)
-  const breadcrumbRef = useRef<HTMLDivElement>(null)
 
   // State
   const [showDebug, setShowDebug] = useState(false)
   const [currentScrollY, setCurrentScrollY] = useState(0)
+  const [breadcrumbText, setBreadcrumbText] = useState('')
+  const [breadcrumbOpacity, setBreadcrumbOpacity] = useState(0)
+  const [isPhilosophyActive, setIsPhilosophyActive] = useState(false)
 
   // Animation values (using refs for performance)
   const smoothScrollY = useRef(0)
@@ -201,6 +407,10 @@ export default function Page() {
     let scale = 0.95
     let translateY = 150
     let translateX = 0
+
+    // Check if philosophy is in active (locked) state for spotlight
+    const isActive = scrollY >= CONFIG.PHILOSOPHY_LOCK_START && scrollY < CONFIG.PHILOSOPHY_LOCK_END
+    setIsPhilosophyActive(isActive)
 
     // Before enter: hidden below
     if (scrollY < CONFIG.PHILOSOPHY_ENTER_START) {
@@ -294,8 +504,6 @@ export default function Page() {
   }, [])
 
   const updateBreadcrumb = useCallback((scrollY: number) => {
-    if (!breadcrumbRef.current) return
-
     let text = ''
     let opacity = 0
 
@@ -303,15 +511,15 @@ export default function Page() {
       text = 'Intro'
       opacity = mapRange(scrollY, CONFIG.HERO_COMPRESS_END, CONFIG.HERO_COMPRESS_END + 100, 0, 0.6)
     } else if (scrollY >= CONFIG.PHILOSOPHY_COMPRESS_END && scrollY < CONFIG.WORK_COMPRESS_END) {
-      text = 'Intro \u00b7 Philosophy'
+      text = 'Intro · Philosophy'
       opacity = 0.6
     } else if (scrollY >= CONFIG.WORK_COMPRESS_END) {
-      text = 'Intro \u00b7 Philosophy \u00b7 Selected Work'
+      text = 'Intro · Philosophy · Selected Work'
       opacity = 0.6
     }
 
-    breadcrumbRef.current.textContent = text
-    breadcrumbRef.current.style.opacity = String(opacity)
+    setBreadcrumbText(text)
+    setBreadcrumbOpacity(opacity)
   }, [])
 
   // ============================================================================
@@ -374,6 +582,26 @@ export default function Page() {
         background: '#0a0a0a',
       }}
     >
+      {/* Global styles for rolling text hover */}
+      <style>{`
+        .breadcrumb-segment {
+          display: inline-block;
+          overflow: hidden;
+          vertical-align: top;
+          cursor: default;
+        }
+        .breadcrumb-segment .rolling-inner {
+          display: inline-block;
+          transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+        .breadcrumb-segment:hover .rolling-inner {
+          transform: translateY(-100%);
+        }
+        .breadcrumb-segment .rolling-inner span {
+          display: block;
+        }
+      `}</style>
+
       {/* ================================================================== */}
       {/* BACKGROUND LAYER (Z: -100 to -50) */}
       {/* ================================================================== */}
@@ -437,7 +665,7 @@ export default function Page() {
       </div>
 
       {/* ================================================================== */}
-      {/* FOREGROUND: Fixed Nav (Anchor A) */}
+      {/* FOREGROUND: Fixed Nav (Anchor A) with mix-blend-mode */}
       {/* ================================================================== */}
       <div
         style={{
@@ -445,23 +673,25 @@ export default function Page() {
           top: '32px',
           left: '32px',
           zIndex: 100,
+          mixBlendMode: 'difference',
         }}
       >
         <div
           style={{
             fontSize: '14px',
             fontWeight: 500,
-            letterSpacing: '0.02em',
+            letterSpacing: '-0.02em',
             color: 'rgba(255,255,255,0.9)',
           }}
         >
-          Patrick J\u00f8rgensen
+          Patrick Jørgensen
         </div>
         <div
           style={{
             fontSize: '12px',
             color: 'rgba(255,255,255,0.5)',
             marginTop: '4px',
+            letterSpacing: '-0.01em',
           }}
         >
           Creative Technologist
@@ -469,10 +699,9 @@ export default function Page() {
       </div>
 
       {/* ================================================================== */}
-      {/* FOREGROUND: Breadcrumb */}
+      {/* FOREGROUND: Breadcrumb with rolling text hover */}
       {/* ================================================================== */}
       <div
-        ref={breadcrumbRef}
         style={{
           position: 'fixed',
           top: '32px',
@@ -480,10 +709,23 @@ export default function Page() {
           fontSize: '12px',
           color: 'rgba(255,255,255,0.6)',
           zIndex: 100,
-          opacity: 0,
+          opacity: breadcrumbOpacity,
           transition: 'opacity 0.3s ease',
+          letterSpacing: '-0.01em',
         }}
-      />
+      >
+        {breadcrumbText.split(' · ').map((segment, index, arr) => (
+          <span key={index}>
+            <span className="breadcrumb-segment">
+              <span className="rolling-inner">
+                <span>{segment}</span>
+                <span>{segment}</span>
+              </span>
+            </span>
+            {index < arr.length - 1 && <span style={{ margin: '0 6px', opacity: 0.4 }}>·</span>}
+          </span>
+        ))}
+      </div>
 
       {/* ================================================================== */}
       {/* MIDGROUND: Hero Section */}
@@ -506,22 +748,23 @@ export default function Page() {
       >
         <h1
           style={{
-            fontSize: 'clamp(48px, 8vw, 120px)',
+            fontSize: 'clamp(48px, 10vw, 140px)',
             fontWeight: 200,
-            letterSpacing: '0.15em',
+            letterSpacing: '-0.06em',
             textTransform: 'uppercase',
             color: 'rgba(255,255,255,0.9)',
             textAlign: 'center',
+            lineHeight: 1.0,
           }}
         >
           The Unfolding
         </h1>
         <p
           style={{
-            fontSize: 'clamp(14px, 1.5vw, 18px)',
-            color: 'rgba(255,255,255,0.5)',
-            marginTop: '24px',
-            letterSpacing: '0.1em',
+            fontSize: 'clamp(12px, 1.2vw, 16px)',
+            color: 'rgba(255,255,255,0.4)',
+            marginTop: '32px',
+            letterSpacing: '0.15em',
             textTransform: 'uppercase',
           }}
         >
@@ -530,7 +773,7 @@ export default function Page() {
       </div>
 
       {/* ================================================================== */}
-      {/* MIDGROUND: Philosophy Section */}
+      {/* MIDGROUND: Philosophy Section with Spotlight */}
       {/* ================================================================== */}
       <div
         ref={philosophyRef}
@@ -547,50 +790,16 @@ export default function Page() {
           opacity: 0,
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            gap: '32px',
-            padding: '0 48px',
-            maxWidth: '1200px',
-            width: '100%',
-            justifyContent: 'center',
-          }}
-        >
+        <SpotlightSection isActive={isPhilosophyActive}>
           {PHILOSOPHY_CARDS.map((card, index) => (
-            <div
+            <PhilosophyCard
               key={index}
-              style={{
-                flex: '1 1 300px',
-                maxWidth: '360px',
-                padding: '32px',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '8px',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.9)',
-                  marginBottom: '12px',
-                }}
-              >
-                {card.title}
-              </h3>
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: 'rgba(255,255,255,0.5)',
-                  lineHeight: 1.6,
-                }}
-              >
-                {card.description}
-              </p>
-            </div>
+              title={card.title}
+              description={card.description}
+              isSpotlightActive={isPhilosophyActive}
+            />
           ))}
-        </div>
+        </SpotlightSection>
       </div>
 
       {/* ================================================================== */}
@@ -629,15 +838,25 @@ export default function Page() {
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'border-color 0.3s ease, background 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
               }}
             >
               <div
                 style={{
                   fontSize: '11px',
                   fontWeight: 500,
-                  color: 'rgba(255,255,255,0.4)',
+                  color: 'rgba(255,255,255,0.35)',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
+                  letterSpacing: '0.08em',
                   marginBottom: '12px',
                 }}
               >
@@ -649,6 +868,8 @@ export default function Page() {
                   fontWeight: 500,
                   color: 'rgba(255,255,255,0.9)',
                   marginBottom: '8px',
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.2,
                 }}
               >
                 {card.title}
@@ -656,8 +877,9 @@ export default function Page() {
               <p
                 style={{
                   fontSize: '14px',
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(255,255,255,0.45)',
                   lineHeight: 1.6,
+                  letterSpacing: '-0.01em',
                 }}
               >
                 {card.description}
@@ -702,6 +924,9 @@ export default function Page() {
           >
             <div>scrollY: {currentScrollY}px</div>
             <div style={{ marginTop: '4px', opacity: 0.6 }}>Press F to toggle debug</div>
+            <div style={{ marginTop: '4px', opacity: 0.6 }}>
+              Philosophy spotlight: {isPhilosophyActive ? 'ON' : 'OFF'}
+            </div>
           </div>
         </>
       )}
