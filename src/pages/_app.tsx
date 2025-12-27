@@ -13,6 +13,7 @@ import { LaunchChecklist } from "@/components/LaunchChecklist";
 import ConcertKillSwitch from "@/components/ConcertKillSwitch";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { LazyMotion, domAnimation } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function App({ Component, pageProps }: AppProps) {
   // Removed global scroll hooks - moved to specific pages that need them
@@ -33,6 +34,7 @@ export default function App({ Component, pageProps }: AppProps) {
           <VisualQAPolish />
           <PerformanceDiagnostic />
           <LaunchChecklist />
+          <Analytics />
         </ThemeProvider>
       </LazyMotion>
     </GlobalErrorBoundary>
